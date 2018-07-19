@@ -23,7 +23,6 @@ class Portfolio {
         for (let token of Object.keys(weights)) {
             const weight = weights[token];
             const price = quotes[token].prices[priceIndex];
-            console.log(usdAmount, weight, sumWeight, price);
             amounts[token] = usdAmount * weight / sumWeight / price;
         }
         return amounts;
@@ -86,7 +85,8 @@ class Quotes {
         if (filename) {
             const datesAndPrices = JSON.parse(fs.readFileSync(filename, 'utf8'));
             for (let i = 0; i < datesAndPrices.length; i += 2) {
-                this.times.push(parseInt(datesAndPrices[i]));
+                const time = parseInt(datesAndPrices[i]);
+                this.times.push(Math.trunc(time/60000)*60000);
                 this.prices.push(parseFloat(datesAndPrices[i + 1]));
             }
 
@@ -197,8 +197,10 @@ for (let token of Object.keys(tokenQuotes)) {
         tokenQuotes[token].prices.push(tokenQuotes[token].prices[tokenQuotes[token].prices.length - 1]);
     }
 }
+var timeDiff = Math.abs(new Date(minStop).getTime() - new Date(maxStart).getTime());
+var diffDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
 console.log('Truncated range to: ' + new Date(maxStart).toISOString() +
-            ' - ' + new Date(minStop).toISOString());
+            ' - ' + new Date(minStop).toISOString() + ' (' + diffDays +  ' days)');
 
 // Update all prices from BTC to USD
 for (let token of Object.keys(tokenQuotes)) {
@@ -219,7 +221,8 @@ for (let token of Object.keys(tokenQuotes)) {
 const p1 = new Portfolio('BtcHolder', { 'BTC' : initialAmountUSD / btcusd.prices[0] });
 const p2 = new Portfolio('TokenHolder', Portfolio.tokenAmountsToBuy(initialAmountUSD, totalWeigth, tokenWeights, tokenQuotes, 0));
 const p3 = new RebalancePortfolio('Rebalancer', Portfolio.tokenAmountsToBuy(initialAmountUSD, totalWeigth, tokenWeights, tokenQuotes, 0), tokenWeights);
-console.log('\n======== BEGIN ========');
+console.log('\n======== BEGIN ========\n');
+console.log('Prices: ' + JSON.stringify(Quotes.pricesForTokens(tokenQuotes, 0)));
 console.log(p1, '$' + p1.wealth({ 'BTC' : btcusd.prices[0] }));
 console.log(p2, '$' + p2.wealth(Quotes.pricesForTokens(tokenQuotes, 0)));
 console.log(p3, '$' + p3.wealth(Quotes.pricesForTokens(tokenQuotes, 0)));
@@ -249,11 +252,11 @@ for (let i = 0; i < btcusd.prices.length; i++) {
         totalArbiterProfit += bestArbitrage.profit - txPrice;
         totalTransactionFees += txPrice;
         numberOfArbitrages++;
-        //console.log('Change');
     }
 }
 
-console.log('\n======== END ========');
+console.log('\n======== END ========\n');
+console.log('Prices: ' + JSON.stringify(Quotes.pricesForTokens(tokenQuotes, btcusd.prices.length - 1)));
 console.log(p1, '$' + p1.wealth({ 'BTC' : btcusd.prices[btcusd.prices.length - 1] }));
 console.log(p2, '$' + p2.wealth(Quotes.pricesForTokens(tokenQuotes, btcusd.prices.length - 1)));
 console.log(p3, '$' + p3.wealth(Quotes.pricesForTokens(tokenQuotes, btcusd.prices.length - 1)));
