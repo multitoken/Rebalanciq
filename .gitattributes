@@ -1,0 +1,12 @@
+d/bnbbtc.json filter=lfs diff=lfs merge=lfs -text
+d/icxbtc.json filter=lfs diff=lfs merge=lfs -text
+d/omgbtc.json filter=lfs diff=lfs merge=lfs -text
+d/trxbtc.json filter=lfs diff=lfs merge=lfs -text
+d/usdbtc.json filter=lfs diff=lfs merge=lfs -text
+d/zilbtc.json filter=lfs diff=lfs merge=lfs -text
+d/zrxbtc.json filter=lfs diff=lfs merge=lfs -text
+d/aebtc.json filter=lfs diff=lfs merge=lfs -text
+d/btcusd.json filter=lfs diff=lfs merge=lfs -text
+d/eosbtc.json filter=lfs diff=lfs merge=lfs -text
+d/ethbtc.json filter=lfs diff=lfs merge=lfs -text
+d/venbtc.json filter=lfs diff=lfs merge=lfs -text
