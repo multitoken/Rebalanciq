@@ -45,6 +45,7 @@ class RebalancePortfolio extends Portfolio {
     }
 
     change(fromSymbol, toSymbol, amount) {
+        console.assert(amount > 0);
         const result = this.getReturn(fromSymbol, toSymbol, amount);
         this.balances[fromSymbol] += amount;
         this.balances[toSymbol] -= result;
@@ -64,6 +65,10 @@ class RebalancePortfolio extends Portfolio {
                 this.balances[expensiveName] /
                 (cheapPrice * this.weights[expensiveName])
             ) - this.balances[cheapName];
+
+        if (exchangeAmount < 0) {
+            return { 'profit' : 0 };
+        }
 
         const returnAmount = this.getReturn(cheapName, expensiveName, exchangeAmount);
         const profit = returnAmount * expensivePrice - exchangeAmount * cheapPrice;
@@ -156,7 +161,7 @@ class Quotes {
 const initialAmountUSD = process.argv[2];
 console.log('Initial USD amount: $' + initialAmountUSD);
 
-const numberOfTokens = (process.argv.length - 4);
+const numberOfTokens = (process.argv.length - 4) / 3;
 console.log('Number of tokens: ', numberOfTokens);
 console.assert(numberOfTokens > 0 && numberOfTokens == Math.trunc(numberOfTokens));
 
@@ -170,7 +175,7 @@ const tokenWeights = {};
 let totalWeigth = 0;
 let maxStart = btcusd.times[0];
 let minStop = btcusd.times[btcusd.times.length - 1];
-for (let i = 0; i < numberOfTokens; i += 3) {
+for (let i = 0; i < numberOfTokens*3; i += 3) {
     const token = process.argv[4 + i];
     const filename = process.argv[4 + i + 1];
     const weight = parseInt(process.argv[4 + i + 2]);
@@ -202,13 +207,13 @@ var diffDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
 console.log('Truncated range to: ' + new Date(maxStart).toISOString() +
             ' - ' + new Date(minStop).toISOString() + ' (' + diffDays +  ' days)');
 
-// Update all prices from BTC to USD
-for (let token of Object.keys(tokenQuotes)) {
-    for (let i = 0; i < btcusd.prices.length; i++) {
-        tokenQuotes[token].prices[i] *= btcusd.prices[i];
-    }
-}
-console.log('All prices updated from BTC to USD');
+// // Update all prices from BTC to USD
+// for (let token of Object.keys(tokenQuotes)) {
+//     for (let i = 0; i < btcusd.prices.length; i++) {
+//         tokenQuotes[token].prices[i] *= btcusd.prices[i];
+//     }
+// }
+// console.log('All prices updated from BTC to USD');
 
 // Interpolation
 btcusd = btcusd.interpolatedWithScale(INTERPOLATION_SCALE);
