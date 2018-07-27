@@ -206,10 +206,10 @@ for (let token of Object.keys(tokenQuotes)) {
 // Randomize exchanges
 
 const randomChanges = {};
-for (let offset = 0; offset < btcusd.times.length; offset += 60*24) {
+for (let offset = 0; offset < btcusd.times.length; offset += 60 * 24 * INTERPOLATION_SCALE) {
     let dailySpentAmount = 0;
     while (dailySpentAmount < dailyExchangeAmountUSD) {
-        const index = Math.trunc(Math.random() * 60 * 24) % (btcusd.times.length - offset);
+        const index = Math.trunc(Math.random() * 60 * 24 * INTERPOLATION_SCALE) % (btcusd.times.length - offset);
         const time = btcusd.times[offset + index];
         if (randomChanges[time]) {
             continue;
