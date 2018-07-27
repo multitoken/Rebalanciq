@@ -30,9 +30,10 @@ class Portfolio {
 }
 
 class RebalancePortfolio extends Portfolio {
-    constructor(name, balances, weights) {
+    constructor(name, balances, weights, fee) {
         super(name, balances);
         this.weights = weights;
+        this.fee = fee;
     }
 
     getReturn(fromSymbol, toSymbol, amount) {
@@ -41,7 +42,7 @@ class RebalancePortfolio extends Portfolio {
         const toBalance = this.balances[toSymbol];
         const toWeight = this.weights[toSymbol];
 
-        return toBalance * amount * fromWeight / ((fromBalance + amount) * toWeight) * 0.998;
+        return toBalance * amount * fromWeight / ((fromBalance + amount) * toWeight) * (1 - this.fee/100);
     }
 
     change(fromSymbol, toSymbol, amount) {
@@ -63,7 +64,7 @@ class RebalancePortfolio extends Portfolio {
                 this.weights[cheapName] *
                 this.balances[cheapName] *
                 this.balances[expensiveName] /
-                (cheapPrice * this.weights[expensiveName])
+                (cheapPrice * this.weights[expensiveName]) * (1 - this.fee/100)
             ) - this.balances[cheapName];
 
         if (exchangeAmount < 0) {
@@ -203,7 +204,7 @@ for (let token of Object.keys(tokenQuotes)) {
 
 const p1 = new Portfolio('BtcHolder', { 'BTC' : initialAmountUSD / btcusd.prices[0] });
 const p2 = new Portfolio('TokenHolder', Portfolio.tokenAmountsToBuy(initialAmountUSD, totalWeigth, tokenWeights, tokenQuotes, 0));
-const p3 = new RebalancePortfolio('Rebalancer', Portfolio.tokenAmountsToBuy(initialAmountUSD, totalWeigth, tokenWeights, tokenQuotes, 0), tokenWeights);
+const p3 = new RebalancePortfolio('Rebalancer', Portfolio.tokenAmountsToBuy(initialAmountUSD, totalWeigth, tokenWeights, tokenQuotes, 0), tokenWeights, 0.2);
 console.log('\n======== BEGIN ========\n');
 console.log('Prices: ' + JSON.stringify(Quotes.pricesForTokens(tokenQuotes, 0)));
 console.log(p1, '$' + p1.wealth({ 'BTC' : btcusd.prices[0] }));
