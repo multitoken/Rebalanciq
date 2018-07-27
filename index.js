@@ -1,8 +1,8 @@
 'use strict';
 
-const INTERPOLATION_SCALE = 12;
-
 const fs = require('fs');
+
+const INTERPOLATION_SCALE = 12;
 
 class Portfolio {
     constructor(name, balances) {
@@ -94,28 +94,6 @@ class Quotes {
                 this.times.push(Math.trunc(time/60000)*60000);
                 this.prices.push(parseFloat(datesAndPrices[i + 1]));
             }
-
-            // let s = '[';
-            // let prev = 0;
-            // for (let i = 0; i < this.times.length; i++) {
-            //     let t = Math.trunc(this.times[i]/60000)*60000;
-            //     if (t == prev) {
-            //         console.log('skip');
-            //         continue;
-            //     }
-            //     s += t + ',' + this.prices[i];
-            //     if (i < this.times.length - 1) {
-            //         s += ','
-            //     }
-            //     prev = t;
-            // }
-            // s += ']';
-            // fs.writeFile(filename + '2', s, function(err) {
-            //     if(err) {
-            //         return console.log(err);
-            //     }
-            //     console.log("The file was saved!");
-            // }); 
         }
     }
 
