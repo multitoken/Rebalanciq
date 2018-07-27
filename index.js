@@ -140,11 +140,14 @@ class Quotes {
 const initialAmountUSD = process.argv[2];
 console.log('Initial USD amount: $' + initialAmountUSD);
 
-const numberOfTokens = (process.argv.length - 4) / 3;
+const dailyExchangeAmountUSD = process.argv[3];
+console.log('Daily exchange USD amount: $' + dailyExchangeAmountUSD);
+
+const numberOfTokens = (process.argv.length - 5) / 3;
 console.log('Number of tokens: ', numberOfTokens);
 console.assert(numberOfTokens > 0 && numberOfTokens == Math.trunc(numberOfTokens));
 
-let btcusd = new Quotes(process.argv[3]);
+let btcusd = new Quotes(process.argv[4]);
 console.log('BTC loaded period: ' + new Date(btcusd.times[0]).toISOString() +
             ' - ' + new Date(btcusd.times[btcusd.times.length - 1]).toISOString());
 
@@ -155,9 +158,9 @@ let totalWeigth = 0;
 let maxStart = btcusd.times[0];
 let minStop = btcusd.times[btcusd.times.length - 1];
 for (let i = 0; i < numberOfTokens*3; i += 3) {
-    const token = process.argv[4 + i];
-    const filename = process.argv[4 + i + 1];
-    const weight = parseInt(process.argv[4 + i + 2]);
+    const token = process.argv[5 + i];
+    const filename = process.argv[5 + i + 1];
+    const weight = parseInt(process.argv[5 + i + 2]);
 
     const quotes = new Quotes(filename);
     tokenQuotes[token] = quotes;
@@ -200,6 +203,27 @@ for (let token of Object.keys(tokenQuotes)) {
     tokenQuotes[token] = tokenQuotes[token].interpolatedWithScale(INTERPOLATION_SCALE);
 }
 
+// Randomize exchanges
+
+const randomChanges = {};
+for (let offset = 0; offset < btcusd.times.length; offset += 60*24) {
+    let dailySpentAmount = 0;
+    while (dailySpentAmount < dailyExchangeAmountUSD) {
+        const index = Math.trunc(Math.random() * 60 * 24) % (btcusd.times.length - offset);
+        const time = btcusd.times[offset + index];
+        if (randomChanges[time]) {
+            continue;
+        }
+
+        let amount = 1 + Math.random() * (initialAmountUSD/100); // from $1 to 1% of amount
+        if (dailySpentAmount + amount > dailyExchangeAmountUSD) {
+            amount = dailyExchangeAmountUSD - dailySpentAmount;
+        }
+        dailySpentAmount += amount;
+        randomChanges[time] = amount;
+    }
+}
+
 //
 
 const p1 = new Portfolio('BtcHolder', { 'BTC' : initialAmountUSD / btcusd.prices[0] });
@@ -216,6 +240,16 @@ let totalArbiterProfit = 0;
 let totalTransactionFees = 0;
 const tokens = Object.keys(tokenQuotes);
 for (let i = 0; i < btcusd.prices.length; i++) {
+    const randomChangeUSD = randomChanges[btcusd.times[i]];
+    if (randomChangeUSD) {
+        let tokenX = tokens[Math.trunc(tokens.length * Math.random())];
+        let tokenY = tokenX;
+        while (tokenY == tokenX) {
+            tokenY = tokens[Math.trunc(tokens.length * Math.random())];
+        }
+        p3.change(tokenX, tokenY, randomChangeUSD/tokenQuotes[tokenX].prices[i]);
+    }
+
     let bestArbitrage = { 'profit' : 0 };
     for (let tokenA of tokens) {
         for (let tokenB of tokens) {
