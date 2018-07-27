@@ -140,8 +140,8 @@ class Quotes {
 const initialAmountUSD = process.argv[2];
 console.log('Initial USD amount: $' + initialAmountUSD);
 
-const dailyExchangeAmountUSD = process.argv[3];
-console.log('Daily exchange USD amount: $' + dailyExchangeAmountUSD);
+const dailyExchangeAmountPercent = process.argv[3];
+console.log('Daily exchange amount in percents: ' + dailyExchangeAmountPercent + '%');
 
 const numberOfTokens = (process.argv.length - 5) / 3;
 console.log('Number of tokens: ', numberOfTokens);
@@ -203,32 +203,11 @@ for (let token of Object.keys(tokenQuotes)) {
     tokenQuotes[token] = tokenQuotes[token].interpolatedWithScale(INTERPOLATION_SCALE);
 }
 
-// Randomize exchanges
-
-const randomChanges = {};
-for (let offset = 0; offset < btcusd.times.length; offset += 60 * 24 * INTERPOLATION_SCALE) {
-    let dailySpentAmount = 0;
-    while (dailySpentAmount < dailyExchangeAmountUSD) {
-        const index = Math.trunc(Math.random() * 60 * 24 * INTERPOLATION_SCALE) % (btcusd.times.length - offset);
-        const time = btcusd.times[offset + index];
-        if (randomChanges[time]) {
-            continue;
-        }
-
-        let amount = 1 + Math.random() * (initialAmountUSD/100); // from $1 to 1% of amount
-        if (dailySpentAmount + amount > dailyExchangeAmountUSD) {
-            amount = dailyExchangeAmountUSD - dailySpentAmount;
-        }
-        dailySpentAmount += amount;
-        randomChanges[time] = amount;
-    }
-}
-
 //
 
 const p1 = new Portfolio('BtcHolder', { 'BTC' : initialAmountUSD / btcusd.prices[0] });
 const p2 = new Portfolio('TokenHolder', Portfolio.tokenAmountsToBuy(initialAmountUSD, totalWeigth, tokenWeights, tokenQuotes, 0));
-const p3 = new RebalancePortfolio('Rebalancer', Portfolio.tokenAmountsToBuy(initialAmountUSD, totalWeigth, tokenWeights, tokenQuotes, 0), tokenWeights, 0.2);
+const p3 = new RebalancePortfolio('Rebalancer', Portfolio.tokenAmountsToBuy(initialAmountUSD, totalWeigth, tokenWeights, tokenQuotes, 0), tokenWeights, 0.5);
 console.log('\n======== BEGIN ========\n');
 console.log('Prices: ' + JSON.stringify(Quotes.pricesForTokens(tokenQuotes, 0)));
 console.log(p1, '$' + p1.wealth({ 'BTC' : btcusd.prices[0] }));
@@ -239,15 +218,38 @@ let numberOfArbitrages = 0;
 let totalArbiterProfit = 0;
 let totalTransactionFees = 0;
 const tokens = Object.keys(tokenQuotes);
+const randomChanges = {};
+let totalChangedUSD = 0;
 for (let i = 0; i < btcusd.prices.length; i++) {
-    const randomChangeUSD = randomChanges[btcusd.times[i]];
-    if (randomChangeUSD) {
+    // abstract day begining
+    if (i % (60 * 24 * INTERPOLATION_SCALE) == 0) {
+        let p3wealth = p3.wealth(Quotes.pricesForTokens(tokenQuotes, i));
+        let dailyExchangeAmountUSD = p3wealth * dailyExchangeAmountPercent / 100;
+        let dailySpentAmount = 0;
+        while (dailySpentAmount < dailyExchangeAmountUSD) {
+            const index = Math.trunc(Math.random() * 60 * 24 * INTERPOLATION_SCALE) % (btcusd.times.length - i);
+            const time = btcusd.times[i + index];
+            if (!randomChanges[time]) {
+                randomChanges[time] = [];
+            }
+
+            let amount = 1 + Math.random() * (initialAmountUSD/100); // from $1 to 1% of amount
+            if (dailySpentAmount + amount > dailyExchangeAmountUSD) {
+                amount = dailyExchangeAmountUSD - dailySpentAmount;
+            }
+            dailySpentAmount += amount;
+            randomChanges[time].push(amount);
+        }
+    }
+
+    for (const randomChangeUSD of randomChanges[btcusd.times[i]] || []) {
         let tokenX = tokens[Math.trunc(tokens.length * Math.random())];
         let tokenY = tokenX;
         while (tokenY == tokenX) {
             tokenY = tokens[Math.trunc(tokens.length * Math.random())];
         }
         p3.change(tokenX, tokenY, randomChangeUSD/tokenQuotes[tokenX].prices[i]);
+        totalChangedUSD += randomChangeUSD;
     }
 
     let bestArbitrage = { 'profit' : 0 };
@@ -278,6 +280,7 @@ console.log('Prices: ' + JSON.stringify(Quotes.pricesForTokens(tokenQuotes, btcu
 console.log(p1, '$' + p1.wealth({ 'BTC' : btcusd.prices[btcusd.prices.length - 1] }));
 console.log(p2, '$' + p2.wealth(Quotes.pricesForTokens(tokenQuotes, btcusd.prices.length - 1)));
 console.log(p3, '$' + p3.wealth(Quotes.pricesForTokens(tokenQuotes, btcusd.prices.length - 1)));
+console.log('Total changed USD: $' + totalChangedUSD);
 console.log('Total arbitragers profit: $' + totalArbiterProfit);
 console.log('Total transaction fees: $' + totalTransactionFees);
 console.log('Number of arbitrages: ' + numberOfArbitrages);
