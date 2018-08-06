@@ -254,7 +254,9 @@ for (let i = 0; i < btcusd.prices.length; i++) {
         while (tokenY == tokenX) {
             tokenY = tokens[Math.trunc(tokens.length * Math.random())];
         }
-        p3.change(tokenX, tokenY, randomChangeUSD/tokenQuotes[tokenX].prices[i]);
+        let amountX = randomChangeUSD/tokenQuotes[tokenX].prices[i];
+        //let amountY = p3.getReturn(tokenX, tokenY, amountX);
+        p3.change(tokenX, tokenY, amountX);
         totalChangedUSD += randomChangeUSD;
     }
 
