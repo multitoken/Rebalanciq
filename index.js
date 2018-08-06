@@ -42,7 +42,8 @@ class RebalancePortfolio extends Portfolio {
         const toBalance = this.balances[toSymbol];
         const toWeight = this.weights[toSymbol];
 
-        return toBalance * amount * fromWeight / ((fromBalance + amount) * toWeight) * (1 - this.fee/100);
+        // ay = ax * by * sx / (ax * sx * sy + bx * sy) * fee
+        return amount * toBalance * fromWeight / (amount * fromWeight * toWeight + fromBalance * toWeight) * (1 - this.fee/100);
     }
 
     change(fromSymbol, toSymbol, amount) {
@@ -58,14 +59,8 @@ class RebalancePortfolio extends Portfolio {
         expensiveName,
         expensivePrice)
     {
-        // x = sqrt(p_2 * s_1 * b_1 * b_2 / p_1 / s_2) - b_1
-        const exchangeAmount = Math.sqrt(
-                expensivePrice *
-                this.weights[cheapName] *
-                this.balances[cheapName] *
-                this.balances[expensiveName] /
-                (cheapPrice * this.weights[expensiveName]) * (1 - this.fee/100)
-            ) - this.balances[cheapName];
+        // ax = sqrt(bx * by * cy * fee / cx / sx / sy) - bx / sx
+        const exchangeAmount = Math.sqrt(this.balances[cheapName] * this.balances[expensiveName] * expensivePrice * (1 - this.fee/100) / cheapPrice / this.weights[cheapName] / this.weights[expensiveName]) - this.balances[cheapName] / this.weights[cheapName];
 
         if (exchangeAmount < 0) {
             return { 'profit' : 0 };
@@ -281,6 +276,7 @@ console.log(p1, '$' + p1.wealth({ 'BTC' : btcusd.prices[btcusd.prices.length - 1
 console.log(p2, '$' + p2.wealth(Quotes.pricesForTokens(tokenQuotes, btcusd.prices.length - 1)));
 console.log(p3, '$' + p3.wealth(Quotes.pricesForTokens(tokenQuotes, btcusd.prices.length - 1)));
 console.log('Total changed USD: $' + totalChangedUSD);
+console.log('Total earned for changes in USD: $' + totalChangedUSD * p3.fee / 100);
 console.log('Total arbitragers profit: $' + totalArbiterProfit);
 console.log('Total transaction fees: $' + totalTransactionFees);
 console.log('Number of arbitrages: ' + numberOfArbitrages);
