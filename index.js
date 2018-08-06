@@ -222,13 +222,13 @@ for (let i = 0; i < btcusd.prices.length; i++) {
         let dailyExchangeAmountUSD = p3wealth * dailyExchangeAmountPercent / 100;
         let dailySpentAmount = 0;
         while (dailySpentAmount < dailyExchangeAmountUSD) {
-            const index = Math.trunc(Math.random() * 60 * 24 * INTERPOLATION_SCALE) % (btcusd.times.length - i);
-            const time = btcusd.times[i + index];
+            const index = Math.trunc(Math.random() * 60 * 24 * INTERPOLATION_SCALE);
+            const time = btcusd.times[(i + index) % btcusd.times.length];
             if (!randomChanges[time]) {
                 randomChanges[time] = [];
             }
 
-            let amount = 1 + Math.random() * (initialAmountUSD/100); // from $1 to 1% of amount
+            let amount = 1 + Math.random() * (p3wealth/100); // from $1 to 1% of amount
             if (dailySpentAmount + amount > dailyExchangeAmountUSD) {
                 amount = dailyExchangeAmountUSD - dailySpentAmount;
             }
