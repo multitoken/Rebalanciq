@@ -33,6 +33,7 @@ class RebalancePortfolio extends Portfolio {
     constructor(name, balances, weights, fee) {
         super(name, balances);
         this.weights = weights;
+        this.minWeight = Object.values(weights).reduce((a,b) => (a < b) ? a : b);
         this.fee = fee;
         this.feeMultiplier = 1 - fee / 100;
     }
@@ -44,7 +45,7 @@ class RebalancePortfolio extends Portfolio {
         const toWeight = this.weights[toSymbol];
 
         // ay = ax * by * sx * fee / ((ax * sx + bx) * sy)
-        return amount * toBalance * fromWeight * this.feeMultiplier / ((amount * fromWeight + fromBalance) * toWeight);
+        return amount * toBalance * fromWeight * this.feeMultiplier / ((amount * fromWeight / this.minWeight + fromBalance) * toWeight);
     }
 
     change(fromSymbol, toSymbol, amount) {
@@ -61,17 +62,19 @@ class RebalancePortfolio extends Portfolio {
         expensivePrice)
     {
         // ax = sqrt(bx * by * cy * fee / (cx * sx * sy)) - bx / sx
-        const exchangeAmount = Math.sqrt(
-            this.balances[cheapName] *
-            this.balances[expensiveName] *
-            expensivePrice *
-            this.feeMultiplier /
-            (
-                cheapPrice *
-                this.weights[cheapName] *
-                this.weights[expensiveName]
-            )
-            ) - this.balances[cheapName] / this.weights[cheapName];
+        const exchangeAmount = this.minWeight * (
+            Math.sqrt(
+                this.balances[cheapName] *
+                this.balances[expensiveName] *
+                expensivePrice *
+                this.feeMultiplier /
+                (
+                    cheapPrice *
+                    this.weights[cheapName] *
+                    this.weights[expensiveName]
+                )
+            ) - this.balances[cheapName] / this.weights[cheapName]
+        );
 
         if (exchangeAmount < 0) {
             return { 'profit' : 0 };
